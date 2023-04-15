@@ -1,79 +1,67 @@
 import { nanoid } from 'nanoid';
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ContactList } from './ContactList/ContactList';
 import { Filter } from './Filter/Filter';
 import { Form } from './Form/Form';
 
 const CONTACT_KEY = 'contacts';
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
-  componentDidMount() {
-    const contacts = localStorage.getItem(CONTACT_KEY);
-    const parsedContacts = JSON.parse(contacts);
-    if (contacts) {
-      this.setState({ contacts: parsedContacts });
+export const App = () => {
+  //функція у useState відбудеться ще до didMount, але це тільки для синхронних операцій--lazy initializatin
+  const [contacts, setContacts] = useState(() => {
+    const parsedContacts = JSON.parse(localStorage.getItem(CONTACT_KEY));
+    if (parsedContacts) {
+      return parsedContacts;
     }
-  }
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.contacts !== prevState.contacts) {
-      localStorage.setItem(CONTACT_KEY, JSON.stringify(this.state.contacts));
-    }
-  }
+    return [];
+  });
+  const [filter, setFilter] = useState('');
 
-  addContact = (name, number) => {
+  useEffect(() => {
+    localStorage.setItem(CONTACT_KEY, JSON.stringify(contacts));
+  }, [contacts]);
+
+  const addContact = (name, number) => {
     const contact = {
       name,
       number,
       id: nanoid(),
     };
-    const listOfNames = this.state.contacts.map(({ name }) =>
-      name.toUpperCase()
-    );
+    const listOfNames = contacts.map(({ name }) => name.toUpperCase());
     const nameToUpperCase = name.toLocaleUpperCase();
     // console.log(listOfNames);
 
     if (listOfNames.includes(nameToUpperCase)) {
       return alert(`${name} is already in contacs.`);
     }
-    this.setState(prevState => ({
-      contacts: [contact, ...prevState.contacts],
-    }));
+    setContacts(prevContacts => [contact, ...prevContacts]);
   };
 
-  filterChange = event => {
-    this.setState({
-      filter: event.currentTarget.value,
-    });
+  const filterChange = event => {
+    setFilter(event.currentTarget.value);
   };
-  filterRender = () => {
-    const { filter, contacts } = this.state;
+  const filterRender = () => {
     const normalizedFilter = filter.toLocaleUpperCase();
     return contacts.filter(contact =>
       contact.name.toLocaleUpperCase().includes(normalizedFilter)
     );
   };
-  onDelete = event => {
+  const onDelete = event => {
     const id = event.currentTarget.id;
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== id),
-    }));
-  };
-  render() {
-    const stats = this.filterRender();
-    // console.log('stats: ', stats);
-    return (
-      <>
-        <h2>Phonebook</h2>
-        <div>
-          <Form addContact={this.addContact} />
-        </div>
-        <h2>Contacts</h2>
-        <Filter value={this.state.filter} onChange={this.filterChange}></Filter>
-        <ContactList dataContact={stats} onDelete={this.onDelete} />
-      </>
+    setContacts(prevContacts =>
+      prevContacts.filter(contact => contact.id !== id)
     );
-  }
-}
+  };
+  const stats = filterRender();
+  // console.log('stats: ', stats);
+  return (
+    <>
+      <h2>Phonebook</h2>
+      <div>
+        <Form addContact={addContact} />
+      </div>
+      <h2>Contacts</h2>
+      <Filter value={filter} onChange={filterChange}></Filter>
+      <ContactList dataContact={stats} onDelete={onDelete} />
+    </>
+  );
+};
