@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { ContactList } from './ContactList/ContactList';
 import { Filter } from './Filter/Filter';
 import { Form } from './Form/Form';
-
 const CONTACT_KEY = 'contacts';
 export const App = () => {
   //функція у useState відбудеться ще до didMount, але це тільки для синхронних операцій--lazy initializatin
